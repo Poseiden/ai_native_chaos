@@ -1,7 +1,7 @@
 # AI-Friendly Project Scaffold Prompt
 
-> Version: 1.3  
-> Purpose: Given an externally prepared Project Brief and this protected scaffold prompt, create a technology-agnostic, AI-friendly repository that preserves explicit product and architecture truth, follows a mandatory discovery-to-final-audit collaboration lifecycle, and can rehydrate its current context automatically in every new Coding Agent window.
+> Version: 1.5  
+> Purpose: Given an externally prepared Project Brief and this protected scaffold prompt, create a technology-agnostic, AI-friendly repository that preserves explicit product and architecture truth, follows a mandatory discovery-to-final-audit collaboration lifecycle, uses bounded and verifiable Agent loops, and can rehydrate its current context automatically in every new Coding Agent window.
 
 ---
 
@@ -29,7 +29,8 @@ Default behavior:
 - Treat `PROJECT_BRIEF_PATH` and `SCAFFOLD_PROMPT_PATH` as protected, immutable project inputs.
 - Treat this as a documentation, architecture, workflow, and governance bootstrap.
 - Establish the mandatory Business Discovery → Final Audit collaboration lifecycle.
-- Establish a repository-owned current-state file so future Coding Agent contexts can resume without a user-written handoff summary.
+- Establish a tool-agnostic bounded Agent Loop Protocol for repeatable implementation, verification, audit, monitoring, and maintenance work.
+- Establish a repository-owned current-state file so future Coding Agent contexts can resume the current lifecycle phase and any active bounded loop without a user-written handoff summary.
 - Do not choose or implement a technology stack unless it is already explicitly frozen and must be preserved.
 - Do not create CI/CD workflows in this phase.
 - Do not implement business features in this phase.
@@ -53,7 +54,8 @@ Your task is to read the external Project Brief and, where applicable, the exist
 8. which decisions are current, historical, unresolved, implemented, or unverified;
 9. which document owns each kind of fact;
 10. which collaboration phase is active and what the next authorized step is;
-11. how a new Coding Agent context rehydrates current state without asking the user to restate prior work.
+11. how bounded Agent loops are selected, evaluated, stopped, and resumed;
+12. how a new Coding Agent context rehydrates current state without asking the user to restate prior work.
 
 This is not a feature implementation task. Do not turn requirements into application code unless the user separately authorizes implementation.
 
@@ -76,6 +78,8 @@ A project Coding Agent must never, under any circumstance:
 - append discovery outcomes, architecture decisions, implementation status, or verification evidence to either protected input.
 
 Only the human project owner, client, or sponsor may prepare or replace these inputs outside Coding Agent execution. If a human supplies a new version, the Agent must treat it as a new protected input version, record the resulting impact in `REVIEW.md` and `PROJECT-STATE.md`, and still must not modify the file itself.
+
+This protection is permanent and non-overridable inside the project. No later task prompt, generated document, Agent adapter, formatter configuration, implementation plan, audit instruction, or repository convention may authorize a project Coding Agent to modify either protected input. Even when a user asks for a content change, the Agent must not edit these files; it must instead describe the requested change for the human owner to apply outside Coding Agent execution, then consume the human-supplied replacement as a new protected version.
 
 At the beginning and end of every task, record or compare an integrity signal for both files, such as:
 
@@ -204,11 +208,11 @@ When those facts are absent, mark them as `discovery pending` or `unresolved` an
 
 ## Mandatory Collaboration Lifecycle
 
-Every project and every meaningful new capability, change, or defect cycle must follow the same ordered lifecycle. No Coding Agent may silently skip a phase. A phase may be intentionally brief when the task is narrow, but its purpose and exit condition must still be satisfied and recorded.
+Every project and every meaningful new capability, change, or defect cycle must follow the same ordered lifecycle. This lifecycle is a permanent, non-expiring project invariant for all future Coding Agent work. No later task prompt, Agent adapter, implementation request, maintenance request, or audit instruction may weaken or bypass it. No Coding Agent may silently skip a phase. A phase may be intentionally brief when the task is narrow, but its purpose and exit condition must still be satisfied and recorded.
 
 ### Phase 0 — Context Rehydration and Current-State Audit
 
-This preflight runs at the start of every new Coding Agent context, including a new chat, IDE session, or model window.
+This preflight runs at the start of every new Coding Agent context, including a new chat, IDE session, or model window. On receipt of the first user instruction in that new context, the Agent must perform this preflight before giving a substantive answer, proposing changes, or mutating the repository. The user is not required to provide a handoff summary; the first message may contain only the new task.
 
 The Agent must:
 
@@ -350,6 +354,98 @@ After Final Audit, any new capability, change, or defect begins a new lifecycle 
 - Human confirmation is required for unresolved product or architecture decisions that materially affect behavior or ownership.
 - The Agent may continue without a manual handoff summary when repository evidence clearly identifies the next authorized step.
 - If repository evidence does not identify an authorized next step, stop and ask rather than guessing.
+
+---
+
+## Bounded Agent Loop Protocol
+
+A project lifecycle phase and an Agent loop are not the same thing:
+
+- the **mandatory collaboration lifecycle** defines the ordered governance stages from Business Discovery through Final Audit;
+- an **Agent loop** is a bounded cycle of observing current state, taking an authorized action, verifying the result, evaluating a stop condition, and either continuing or stopping inside one lifecycle phase.
+
+A loop may improve execution within a phase, but it may never skip, merge, or override lifecycle phases or their human decision gates.
+
+### Loop type selection
+
+Use the least autonomous and least expensive mechanism that can complete the task safely.
+
+| Loop type | Trigger | Stop condition | Appropriate use | Default authority |
+|---|---|---|---|---|
+| Turn-based | A user prompt | Agent completes the turn or requires genuinely missing context | Discovery, product decisions, UX decisions, Domain/architecture review, unfamiliar or ambiguous work | Default whenever human judgment is material |
+| Goal-based | A manually started bounded task | Verifiable goal achieved or finite iteration cap reached | Confirmed-scope implementation, build/test repair, migration verification, documentation closure, Final Audit | Allowed when success criteria are explicit and deterministic enough |
+| Time-based | A declared interval or external-state check | Human cancellation or declared external completion condition | Waiting for CI, review comments, queues, deployments, recurring summaries, external system changes | Requires explicit human authorization and a declared interval/cancellation rule |
+| Proactive | An authorized event or schedule without a human present in real time | Each bounded task reaches its goal; the routine continues only until explicitly disabled | Repeated well-defined work such as issue triage, dependency updates, or migration batches | Requires explicit human authorization, narrow permissions, and a pilot on a small scope |
+| No Agent loop / deterministic script | Direct invocation | Script exits successfully or fails | Formatting, static validation, code generation, or other deterministic repeated mechanics | Prefer this over Agent reasoning when a script can prove the result |
+
+These categories are tool-agnostic. Commands such as `/goal`, `/loop`, or `/schedule` may be used when an Agent supports them, but generated project rules must describe behavior and safety contracts rather than depend on one vendor's command syntax.
+
+### Required Loop Contract
+
+Before starting a goal-based, time-based, proactive, or otherwise multi-iteration autonomous loop, define a concise Loop Contract in `PROJECT-STATE.md` or the active task record:
+
+- stable Loop ID;
+- lifecycle phase in which the loop operates;
+- loop type;
+- exact goal or monitored condition;
+- authorized scope and explicit non-scope;
+- authoritative inputs and current-state sources;
+- permitted action for each iteration;
+- evaluator or verification procedure;
+- deterministic success criteria where possible;
+- finite iteration, duration, or per-run work cap;
+- interval and cancellation rule for recurring loops;
+- stop-and-ask conditions;
+- allowed side effects and forbidden side effects;
+- protected-input, Git, credential, data, and environment constraints;
+- current iteration/status and most recent verification result.
+
+A goal-based loop must always have a finite iteration cap. When the human owner has not supplied one, use a conservative default of five iterations. Reaching the cap without satisfying the goal results in `BLOCKED` or `FAIL`, not an invented success.
+
+Each invocation of a time-based or proactive routine must itself be bounded. A recurring schedule is not permission for one task execution to run indefinitely.
+
+### Iteration cycle
+
+Each loop iteration must:
+
+1. read the active Loop Contract and recheck live state;
+2. observe the latest repository or external-system evidence rather than relying on stale conversation memory;
+3. make the smallest authorized change or perform the declared check;
+4. run the defined verification procedure;
+5. compare the evidence with the success and stop conditions;
+6. either stop successfully, continue within the cap, or stop and ask/report blocked;
+7. persist a concise checkpoint before context loss, handoff, phase transition, or session end.
+
+Do not rewrite `PROJECT-STATE.md` after every trivial command. Update it when loop status, evidence, blocker, iteration outcome, or next action meaningfully changes.
+
+### Loop safety and quality rules
+
+- Prefer a simple turn or deterministic script over a complex loop when sufficient.
+- Prefer quantitative and machine-checkable verification over subjective self-assessment.
+- Never weaken, delete, skip, or rewrite a test, AC, business rule, security guard, data invariant, or architecture boundary merely to make a loop terminate.
+- Never expand scope, choose an unresolved product rule, assign ambiguous historical data, or introduce a fallback merely to satisfy a stop condition.
+- Never automatically repeat a non-idempotent business action, external payment, destructive migration, data rewrite, deployment, paid-provider call, or other irreversible side effect unless the Loop Contract explicitly authorizes that exact repetition and proves it safe.
+- Routine tests and verification loops must remain deterministic and must not consume production credentials, real paid-provider tokens, or production data by default.
+- Do not run overlapping mutation loops against the same working tree. Parallel exploration must be read-only or isolated in separate worktrees/environments and reconciled explicitly.
+- Use scripts for deterministic repeated work and reserve Agent reasoning for interpretation, repair, or judgment.
+- Pilot proactive or broad loops on a small representative slice before expanding them.
+- Match polling frequency to how quickly the external state can meaningfully change; do not poll more often merely because the tool permits it.
+- For high-risk changes or Final Audit, use a fresh-context reviewer or independent review pass when available and justified. This is additional evidence, not a replacement for owning tests.
+- If a loop exposes a reusable failure mode, encode the durable correction in repository-owned `AGENTS.md`, an appropriate reusable skill/check, `REVIEW.md`, or `AI-CODING-PRACTICE.md`. Never modify the protected Project Brief or protected scaffold prompt from within the project.
+- Loop completion proves only the evidence defined by the Loop Contract. It does not automatically imply CI, staging, deployment, production, or continuous-health verification.
+
+### Human-gated work
+
+The following work defaults to turn-based collaboration and must not be silently converted into an autonomous goal-based, time-based, or proactive loop:
+
+- Business Discovery and stakeholder interpretation;
+- Persona, User Story, Acceptance Criteria, and Product Non-goal confirmation;
+- ambiguous Domain ownership or service-boundary decisions;
+- destructive or irreversible data decisions;
+- security, privacy, compliance, or production-risk acceptance;
+- any task whose valid completion requires choosing among multiple reasonable business outcomes.
+
+The Agent may analyze options and prepare a decision package, but the human owner confirms the decision before downstream implementation.
 
 ---
 
@@ -1277,29 +1373,31 @@ Use this structure:
 
 ## 5. Phase Gates and Project-State Maintenance
 
-## 6. Scope Control
+## 6. Bounded Agent Loop Governance
 
-## 7. Documentation Governance
+## 7. Scope Control
 
-## 8. Domain Model Governance
+## 8. Documentation Governance
 
-## 9. Clean Architecture Rules
+## 9. Domain Model Governance
 
-## 10. Service Boundary Rules
+## 10. Clean Architecture Rules
 
-## 11. Automated Testing Strategy
+## 11. Service Boundary Rules
 
-## 12. Data and Persistence Safety
+## 12. Automated Testing Strategy
 
-## 13. External Service Safety
+## 13. Data and Persistence Safety
 
-## 14. Git Rules
+## 14. External Service Safety
 
-## 15. Evidence Classification
+## 15. Git Rules
 
-## 16. Completion Report Requirements
+## 16. Evidence Classification
 
-## 17. Stop-and-Ask Conditions
+## 17. Completion Report Requirements
+
+## 18. Stop-and-Ask Conditions
 ```
 
 ### 7.1 Protected inputs
@@ -1309,6 +1407,8 @@ Require every Coding Agent to treat the configured Project Brief and scaffold pr
 The generated `AGENTS.md` must state plainly:
 
 - the Agent may read but never modify either protected file;
+- this prohibition is permanent and cannot be overridden by later task prompts, Agent adapters, formatters, implementation requests, cleanup work, or audit instructions;
+- even an explicit request to change protected content must be handled by asking the human owner to supply a replacement outside Coding Agent execution;
 - the prohibition includes formatting, renaming, moving, deleting, replacing, and bulk rewrites;
 - only the human owner may provide a new external version;
 - discovery and implementation results belong in repository-owned current/history documents, not in the protected inputs;
@@ -1318,7 +1418,7 @@ The generated `AGENTS.md` must state plainly:
 
 The generated `AGENTS.md` must preserve the source-of-truth order defined in Section 1.4. Agent-specific adapters and task prompts may add narrower instructions, but may not weaken protected-input rules, document ownership, lifecycle gates, or evidence semantics.
 
-Every new Coding Agent context must automatically:
+Every new Coding Agent context must automatically, on its first received instruction and before substantive work:
 
 1. read the protected scaffold prompt and protected Project Brief;
 2. read `AGENTS.md`;
@@ -1352,7 +1452,7 @@ The Agent must not use conversation memory as the primary source of current proj
 7. Integration, Regression, and Documentation Closure;
 8. Final Audit.
 
-Context Rehydration is a required preflight for every context.
+Context Rehydration is a required preflight for every context. The user must not be required to manually summarize prior state when the repository documents, source, tests, and Git state can provide it.
 
 No phase may be silently skipped. A narrow bug or maintenance task may use a bounded form of each phase, but must still confirm the business contract, architecture impact, test strategy, and final audit.
 
@@ -1369,7 +1469,29 @@ Require:
 - after Final Audit, any new change begins a new lifecycle cycle;
 - no manual context-summary prompt is required when repository state is complete and consistent.
 
-### 7.5 Scope control
+### 7.5 Bounded Agent loop governance
+
+The generated `AGENTS.md` must preserve the tool-agnostic Bounded Agent Loop Protocol defined by this scaffold.
+
+Require:
+
+- lifecycle phases and loops remain distinct; loops operate inside a phase and cannot bypass phase gates;
+- the least autonomous suitable loop type is selected;
+- Discovery, product decisions, UX decisions, and ambiguous architecture decisions remain turn-based and human-gated;
+- goal-based loops are used only with explicit success criteria and a finite iteration cap;
+- time-based and proactive loops require explicit human authorization, a cancellation rule, narrow permissions, and bounded per-run work;
+- deterministic repeated work uses scripts when possible;
+- every autonomous multi-iteration loop has a recorded Loop Contract;
+- `PROJECT-STATE.md` identifies the active Loop ID/type/status or states that no loop is active;
+- a future Agent context can resume or safely stop the active loop from repository state;
+- no loop weakens tests/contracts, expands scope, guesses decisions, or repeats unsafe side effects to terminate;
+- no overlapping mutation loops operate on the same working tree;
+- the default goal-based iteration cap is five when the human owner supplied no cap;
+- reaching a cap without satisfying exit criteria is reported as blocked/failure;
+- loop completion is classified only at the evidence level actually verified;
+- protected-input and Git rules apply in every iteration.
+
+### 7.6 Scope control
 
 Require:
 
@@ -1379,7 +1501,7 @@ Require:
 - no silent defaulting when a business decision is unresolved;
 - no broad refactor unless separately authorized.
 
-### 7.6 Documentation governance
+### 7.7 Documentation governance
 
 Use this update rule:
 
@@ -1396,7 +1518,7 @@ Use this update rule:
 
 Current facts must be corrected at their owner. Do not append only a historical note while leaving the current owner stale.
 
-### 7.7 Domain model governance
+### 7.8 Domain model governance
 
 Require:
 
@@ -1407,13 +1529,13 @@ Require:
 - no Domain Service or Domain Event without a demonstrated need;
 - historical models only in `REVIEW.md` and clearly marked.
 
-### 7.8 Clean Architecture rules
+### 7.9 Clean Architecture rules
 
 Include the Domain, Application, Infrastructure, Interface/Delivery, and Composition Root rules from `ARCHITECTURE.md` as durable constraints, but do not duplicate project-specific model details.
 
 Require new code to preserve inward dependency direction.
 
-### 7.9 Service boundary rules
+### 7.10 Service boundary rules
 
 Require:
 
@@ -1424,7 +1546,7 @@ Require:
 - no service extraction merely because an internal Port exists;
 - architecture documentation update when ownership or dependency changes.
 
-### 7.10 Automated testing strategy
+### 7.11 Automated testing strategy
 
 Require the pyramid:
 
@@ -1450,7 +1572,7 @@ Rules:
 - new or changed ACs require an explicit verification strategy;
 - planned tests are not described as implemented.
 
-### 7.11 Git rules
+### 7.12 Git rules
 
 Default rules:
 
@@ -1462,7 +1584,7 @@ Default rules:
 
 The human owner performs commits and pushes unless they explicitly establish a different repository policy outside this template.
 
-### 7.12 Evidence classification
+### 7.13 Evidence classification
 
 Require distinction among:
 
@@ -1481,7 +1603,7 @@ Require distinction among:
 
 One level never implies another.
 
-### 7.13 Stop-and-ask conditions
+### 7.14 Stop-and-ask conditions
 
 Stop and ask when:
 
@@ -1494,6 +1616,9 @@ Stop and ask when:
 - current documents and executable source conflict materially;
 - the change would add a technology, service, queue, event system, or broad refactor outside confirmed scope;
 - valid verification would require a real credential, paid provider, production data, or inaccessible environment;
+- a Loop Contract is missing, contradictory, unbounded, or authorizes unsafe repeated side effects;
+- a loop reaches its finite cap, makes no meaningful progress across repeated iterations, or would need to weaken a contract to continue;
+- time-based or proactive execution lacks explicit human authorization or a cancellation rule;
 - completion would require overstating evidence.
 
 ---
@@ -1519,11 +1644,13 @@ Use this structure:
 
 ## 6. Testing Strategy Decisions
 
-## 7. Verification Evidence and Limits
+## 7. Agent Loop and Autonomy Decisions
 
-## 8. Technical Debt Register
+## 8. Verification Evidence and Limits
 
-## 9. Retrospective
+## 9. Technical Debt Register
+
+## 10. Retrospective
 ```
 
 ### 8.1 New scaffold rules
@@ -1570,7 +1697,10 @@ AD-001
 DM-001
 SA-001
 TS-001
+LP-001
 ```
+
+Record project-specific loop/autonomy decisions only when they are meaningful, such as why a task remains human-gated, why a goal-based loop is safe, why a recurring routine is authorized, or why a loop was stopped after overreach. Do not fabricate loop history during initialization.
 
 ### 8.4 Supersession rules
 
@@ -1655,6 +1785,7 @@ Rules:
 - Keep architecture summary concise and point to `ARCHITECTURE.md`.
 - Keep product summary concise and point to `SPEC.md`.
 - Keep the collaboration-phase summary concise and point to `PROJECT-STATE.md`.
+- In Development Workflow, explain that loops are bounded execution mechanisms inside lifecycle phases, not replacements for Business Discovery, architecture decisions, or Final Audit.
 - Tell Coding Agents to begin with `AGENTS.md` and `PROJECT-STATE.md`, not with a user-written handoff summary.
 
 Documentation map must include:
@@ -1692,23 +1823,25 @@ Use this structure:
 
 ## 3. Active Scope or Increment
 
-## 4. Authoritative Inputs and References
+## 4. Active Loop Contract
 
-## 5. Last Completed Phase or Increment
+## 5. Authoritative Inputs and References
 
-## 6. Confirmed Decisions Relevant to Current Work
+## 6. Last Completed Phase or Increment
 
-## 7. Open Decisions and Blockers
+## 7. Confirmed Decisions Relevant to Current Work
 
-## 8. Implementation Status
+## 8. Open Decisions and Blockers
 
-## 9. Verification Status and Evidence Level
+## 9. Implementation Status
 
-## 10. Known Working-Tree or Environment Warnings
+## 10. Verification Status and Evidence Level
 
-## 11. Next Authorized Step
+## 11. Known Working-Tree or Environment Warnings
 
-## 12. Context Rehydration Notes
+## 12. Next Authorized Step
+
+## 13. Context Rehydration Notes
 ```
 
 Rules:
@@ -1719,6 +1852,8 @@ Rules:
 - never store secrets, credentials, personal data, full logs, or long historical narratives;
 - do not restate complete Stories, Domain Models, service contracts, or test evidence already owned elsewhere;
 - identify the exact active Story/AC, increment, or defect contract by stable ID or link;
+- state `none` when no loop is active; otherwise record the Loop ID, type, lifecycle phase, goal, evaluator, success criteria, cap/interval, current iteration/status, stop conditions, side-effect permissions, and latest verification result;
+- ensure any future context can resume, cancel, or safely report the active loop without reconstructing it from chat history;
 - distinguish planned, implemented, and verified work;
 - record blockers and the next authorized action explicitly;
 - mark Git or environment observations as point-in-time and require live rechecking in the next context;
@@ -1760,6 +1895,8 @@ Suggested correction-log format:
 
 | Date | Context | Agent interpretation | Human correction | Reusable lesson |
 |---|---|---|---|---|
+
+When a loop materially affects collaboration, record the loop type, goal, stop criteria, where it stalled or overreached, the human correction, and the reusable guardrail. Do not log every routine iteration or duplicate `PROJECT-STATE.md`.
 
 ---
 
@@ -1891,6 +2028,15 @@ Before completion, audit these relationships:
 - staging verified does not mean production verified;
 - point-in-time evidence does not mean continuous health.
 
+### 14.8 Loop governance and current state
+
+- The active loop, when present, operates inside the current lifecycle phase.
+- `PROJECT-STATE.md` contains a complete, bounded Loop Contract or explicitly states that no loop is active.
+- Loop success criteria map to current Stories/ACs, defect contracts, architecture constraints, or verification gates rather than to vague self-assessment.
+- Goal-based loops have a finite cap; time-based and proactive loops have explicit authorization and cancellation rules.
+- Loop completion language matches the evidence actually produced.
+- Reusable loop corrections are recorded in repository-owned governance/history documents, not in protected inputs.
+
 ---
 
 ## 15. Scaffold Completion Gates
@@ -1914,6 +2060,9 @@ The scaffold may be declared complete only when all applicable gates pass:
 15. No technology stack, CI/CD workflow, speculative service, schema, queue, event bus, or feature is introduced merely to complete the scaffold.
 16. Documentation-safe validation passes, or every unresolved validation issue is reported.
 17. The Coding Agent performs no commit, push, pull, rebase, reset, or history rewrite.
+18. `AGENTS.md` defines tool-agnostic bounded loop selection, required Loop Contracts, finite caps, safe iteration behavior, and explicit authorization for time-based or proactive routines.
+19. `PROJECT-STATE.md` records either no active loop or enough current Loop Contract/status information for a new Agent context to resume, cancel, or report it safely.
+20. No loop is unbounded, no loop bypasses lifecycle gates, and no loop repeats irreversible or paid side effects without explicit authorization and safety evidence.
 
 ---
 
@@ -1978,11 +2127,24 @@ Use this checklist for detailed review. Mark each item as `pass`, `not applicabl
 - `AGENTS.md` defines the test pyramid and evidence taxonomy.
 - Default Git behavior prohibits Agent commit/push/history rewriting without explicit authorization.
 
+### Loop governance
+
+- The generated `AGENTS.md` distinguishes lifecycle phases from loops.
+- It selects the least autonomous appropriate loop type and defaults ambiguous decision work to turn-based collaboration.
+- Goal-based loops require explicit verifiable success criteria and a finite cap.
+- Time-based and proactive loops require explicit human authorization, bounded per-run work, and a cancellation rule.
+- Every active autonomous loop has a recorded Loop Contract.
+- Repeated deterministic work prefers scripts over repeated Agent reasoning.
+- Loop rules forbid weakening tests/contracts, expanding scope, guessing decisions, unsafe repeated side effects, and overlapping mutation loops.
+- Reaching the cap without success is reported as blocked/failure.
+- Loop completion does not overstate evidence level.
+
 ### Collaboration continuity
 
 - `PROJECT-STATE.md` identifies the current lifecycle phase and active increment or defect contract.
 - It links to current product and architecture owners instead of duplicating them.
 - It records open decisions, blockers, evidence level, and next authorized step.
+- It records the active Loop Contract/status or explicitly states that no loop is active.
 - A new Agent context verifies live Git/source state and does not rely on stale conversation memory.
 - The Agent does not ask the user to restate context already available in the repository.
 - Final Audit closes the current cycle; later changes start a new lifecycle cycle.
@@ -2009,6 +2171,7 @@ Use this checklist for detailed review. Mark each item as `pass`, `not applicabl
 - No speculative service, event bus, queue, framework, schema, or feature implementation is introduced.
 - No commit or push is performed.
 - No mandatory lifecycle phase is silently skipped.
+- No recurring or autonomous loop is created merely because the Agent tool supports it.
 
 ---
 
@@ -2021,7 +2184,8 @@ Run only documentation-safe validation appropriate to the repository, for exampl
 - heading/ID consistency checks;
 - duplicate Story/AC/Rule ID checks;
 - Mermaid syntax review where possible;
-- `PROJECT-STATE.md` lifecycle-phase and reference consistency;
+- `PROJECT-STATE.md` lifecycle-phase, active Loop Contract, cap/authorization, and reference consistency;
+- check that any declared loop is bounded and does not bypass lifecycle or protected-input rules;
 - protected-input Git diff or SHA-256 integrity comparison;
 - `git diff --check` in a Git repository.
 
@@ -2130,7 +2294,20 @@ Summarize:
 - planned versus existing evidence;
 - major gaps.
 
-## 12. Documentation Governance
+## 12. Loop Governance and Active Loop State
+
+Summarize:
+
+- selected loop type or `none`;
+- lifecycle phase containing the loop;
+- goal and authorized scope;
+- evaluator and success criteria;
+- iteration/time cap or recurring cancellation rule;
+- current status and latest verification result;
+- stop-and-ask conditions;
+- whether a future context can resume or safely stop it.
+
+## 13. Documentation Governance
 
 Confirm the owner of:
 
@@ -2140,11 +2317,11 @@ Confirm the owner of:
 - decision history/evidence;
 - AI collaboration evidence.
 
-## 13. Validation Performed
+## 14. Validation Performed
 
 List exact checks performed.
 
-## 14. Remaining Warnings and Open Decisions
+## 15. Remaining Warnings and Open Decisions
 
 List only real unresolved items.
 ```
@@ -2163,8 +2340,9 @@ The generated scaffold is successful when a future Coding Agent can enter the re
 - Which test layer should prove each AC?
 - What is current, historical, implemented, verified, or unresolved?
 - Which collaboration phase is active, what is blocked, and what happens next?
+- Is a bounded loop active; what is its type, goal, evaluator, cap, stop condition, and current status?
 - Which document must be updated when a change is made?
 - Can a new Coding Agent context resume without a user-written project summary?
 - Are the protected Project Brief and scaffold prompt still unchanged?
 
-Do not optimize for the largest directory tree. Optimize for accurate context, explicit ownership, bounded autonomy, and maintainable AI-assisted evolution.
+Do not optimize for the largest directory tree or the most autonomous loop. Optimize for accurate context, explicit ownership, bounded autonomy, verifiable stop conditions, and maintainable AI-assisted evolution.
