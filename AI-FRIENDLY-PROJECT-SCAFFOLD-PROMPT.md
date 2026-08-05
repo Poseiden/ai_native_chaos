@@ -1,6 +1,6 @@
 # AI-Friendly Project Scaffold Prompt
 
-> Version: 1.5  
+> Version: 1.6
 > Purpose: Given an externally prepared Project Brief and this protected scaffold prompt, create a technology-agnostic, AI-friendly repository that preserves explicit product and architecture truth, follows a mandatory discovery-to-final-audit collaboration lifecycle, uses bounded and verifiable Agent loops, and can rehydrate its current context automatically in every new Coding Agent window.
 
 ---
@@ -278,16 +278,23 @@ Establish or update:
 
 Break the confirmed scope into the smallest coherent vertical increment or bounded repair that can be implemented and verified without leaving misleading partial behavior.
 
-For the active increment, record in `PROJECT-STATE.md`:
+For the active increment, establish the **Active Increment Contract** in `PROJECT-STATE.md`. It is the single shared execution contract among the Planner Agent, Developer Agent, and Reviewer Agent: it defines why the current increment exists, its current status, what it must complete, what it explicitly does not do, how completion is judged, how the result is verified, and the current evidence level.
 
-- objective;
-- included Stories/ACs or defect contract;
+Record in `PROJECT-STATE.md`:
+
+- Increment ID;
+- objective and expected business result;
+- included Stories/ACs or defect contract, by stable ID;
 - explicit in-scope and out-of-scope boundaries;
 - affected Domain concepts and architecture owners;
-- test-layer plan;
+- implementation tasks;
+- validation plan and verification layer for each requirement/AC;
+- reviewer acceptance checklist;
 - documentation impact;
 - stop-and-ask conditions;
 - next authorized action.
+
+All three agents must operate against the same Contract. `PROJECT-STATE.md` remains the only owner of the current increment execution contract; do not create a separate Plan artifact for it.
 
 Do not create speculative future increments merely to make a roadmap look complete.
 
@@ -354,6 +361,23 @@ After Final Audit, any new capability, change, or defect begins a new lifecycle 
 - Human confirmation is required for unresolved product or architecture decisions that materially affect behavior or ownership.
 - The Agent may continue without a manual handoff summary when repository evidence clearly identifies the next authorized step.
 - If repository evidence does not identify an authorized next step, stop and ask rather than guessing.
+
+### Active Increment Contract collaboration roles
+
+**Planner Agent**
+
+- Analyzes requirements and generates the Active Increment Contract in `PROJECT-STATE.md`.
+
+**Developer Agent**
+
+- Must read `PROJECT-STATE.md` and the Active Increment Contract before implementation.
+- Implements only the Contract's Included Scope.
+- Must not expand scope, add deferred features, or implement work that lacks an authorized Contract entry.
+
+**Reviewer Agent**
+
+- Must verify against `PROJECT-STATE.md`, the Active Increment Contract, the Git diff, and repository evidence.
+- Must not rely on the Developer Agent's conversation response or self-description as verification evidence.
 
 ---
 
@@ -512,6 +536,7 @@ Each kind of fact must have one primary owner.
 | What testing architecture currently exists or is planned? | `ARCHITECTURE.md` |
 | What must all Coding Agents obey? | `AGENTS.md` |
 | What collaboration phase is active, what scope is authorized, and what happens next? | `PROJECT-STATE.md` |
+| What must the current increment complete, and how is it accepted and verified? | `PROJECT-STATE.md` — Active Increment Contract |
 | Why was an architecture or product decision made? | `REVIEW.md` |
 | What was superseded? | `REVIEW.md` |
 | What evidence exists and what remains unverified? | `REVIEW.md` |
@@ -520,6 +545,8 @@ Each kind of fact must have one primary owner.
 | What original inputs must never be modified by Agents? | `PROJECT_BRIEF_PATH` and `SCAFFOLD_PROMPT_PATH` |
 
 Avoid duplicating complete contracts across documents. Use links and IDs instead.
+
+The Active Increment Contract does not create a new owner document. `PROJECT-STATE.md` remains its only owner, and no separate Plan artifact (`IMPLEMENTATION-PLAN.md` or equivalent) may be introduced.
 
 ---
 
@@ -1823,6 +1850,8 @@ Use this structure:
 
 ## 3. Active Scope or Increment
 
+(contains the Active Increment Contract)
+
 ## 4. Active Loop Contract
 
 ## 5. Authoritative Inputs and References
@@ -1844,6 +1873,114 @@ Use this structure:
 ## 13. Context Rehydration Notes
 ```
 
+### Active Increment Contract
+
+`PROJECT-STATE.md` owns the single **Active Increment Contract** for the current lifecycle cycle. It is the shared execution contract among the Planner Agent, Developer Agent, and Reviewer Agent: it states why the increment exists, its current status, what must be completed, what is explicitly excluded, how completion is judged, how the result is verified, and the current evidence level.
+
+Section `3. Active Scope or Increment` must contain the Active Increment Contract, including at least:
+
+````markdown
+## 3. Active Scope or Increment
+
+### Increment ID
+
+Unique identifier, for example: AUTH-001
+
+### Increment Status
+
+Allowed values:
+
+- Proposed
+- Approved
+- Implementing
+- Verification
+- Closed
+- Blocked
+
+This status expresses the current lifecycle state of the Increment. Rules:
+
+- Planner creates the Contract with `Proposed` by default;
+- after human approval, it becomes `Approved`;
+- while the Developer executes, it is `Implementing`;
+- while the Reviewer verifies, it is `Verification`;
+- after completion, it is `Closed`;
+- when work cannot continue, it is `Blocked`.
+
+Do not introduce a new status system.
+
+### Objective
+
+Explain:
+- why this Increment is needed;
+- the expected business result.
+
+### Included Scope
+
+Include:
+- User Story IDs;
+- Acceptance Criteria IDs;
+- Business Rule IDs.
+
+### Explicitly Excluded
+
+State clearly:
+- features not included;
+- decisions deferred;
+- development scope not permitted.
+
+### Architecture Impact
+
+Record:
+- Domain Concepts;
+- Service/Runtime Units;
+- ownership boundaries.
+
+### Implementation Tasks
+
+| ID | Task | Status |
+|---|---|---|
+
+Task Status values:
+
+- Planned
+- In Progress
+- Completed
+- Blocked
+
+Use these values only, so Agents do not invent status meanings. Task Status is distinct from Increment Status:
+
+- Increment Status expresses the lifecycle of the entire Increment;
+- Task Status expresses the state of an individual task inside the Increment.
+
+### Validation Plan
+
+| Requirement / AC | Verification Layer | Evidence Level |
+|---|---|---|
+
+Evidence Level must follow the Scaffold's existing Evidence Classification (see Section 14.7, Status language). Allowed examples:
+
+- documented
+- implemented
+- locally verified
+- integration verified
+- CI verified
+- staging verified
+
+Forbidden without corresponding evidence:
+
+- done
+- tested
+- complete
+
+### Reviewer Acceptance Checklist
+
+- Scope satisfied
+- Acceptance Criteria verified
+- Architecture preserved
+- No scope expansion
+- Documentation updated
+````
+
 Rules:
 
 - update it at every lifecycle phase transition;
@@ -1857,7 +1994,10 @@ Rules:
 - distinguish planned, implemented, and verified work;
 - record blockers and the next authorized action explicitly;
 - mark Git or environment observations as point-in-time and require live rechecking in the next context;
-- after Final Audit, mark the cycle closed and state that a new change must begin a new lifecycle cycle.
+- after Final Audit, mark the cycle closed and state that a new change must begin a new lifecycle cycle;
+- `PROJECT-STATE.md` does not store the complete Product Contract, the complete Architecture Contract, or a full Plan artifact;
+- it does not replace `SPEC.md` or `ARCHITECTURE.md`;
+- it stores only the current Active Increment Contract and lifecycle state, linking to `SPEC.md`, `ARCHITECTURE.md`, and `REVIEW.md` for the underlying facts.
 
 ---
 
@@ -2063,6 +2203,15 @@ The scaffold may be declared complete only when all applicable gates pass:
 18. `AGENTS.md` defines tool-agnostic bounded loop selection, required Loop Contracts, finite caps, safe iteration behavior, and explicit authorization for time-based or proactive routines.
 19. `PROJECT-STATE.md` records either no active loop or enough current Loop Contract/status information for a new Agent context to resume, cancel, or report it safely.
 20. No loop is unbounded, no loop bypasses lifecycle gates, and no loop repeats irreversible or paid side effects without explicit authorization and safety evidence.
+21. The current Active Increment has an explicit Contract recorded in `PROJECT-STATE.md` (why it exists, what it completes, what is excluded, how completion is judged, and how it is verified).
+22. The Increment has a clear Scope Boundary: Included Scope and Explicitly Excluded are both stated.
+23. The Increment has a Validation Plan mapping each requirement/AC to a verification layer.
+24. A Reviewer can accept the Increment from the same Contract, the Git diff, and repository evidence, without relying on the Developer Agent's self-description.
+25. No duplicate Plan document (such as `IMPLEMENTATION-PLAN.md`) exists; `PROJECT-STATE.md` remains the only owner of the Active Increment Contract.
+26. The Active Increment has an explicit `Increment Status` using only the defined values (Proposed, Approved, Implementing, Verification, Closed, Blocked).
+27. Implementation Tasks use only the unified Task Status values (Planned, In Progress, Completed, Blocked), and Task Status is not conflated with Increment Status.
+28. The Validation Plan includes an `Evidence Level` column following the Scaffold's Evidence Classification.
+29. Recorded Evidence Levels never exceed the actual verification scope (documented vs implemented vs locally verified vs integration verified vs CI verified vs staging verified).
 
 ---
 
@@ -2075,6 +2224,7 @@ Use this checklist for detailed review. Mark each item as `pass`, `not applicabl
 - `README.md`, `SPEC.md`, `ARCHITECTURE.md`, `AGENTS.md`, `PROJECT-STATE.md`, `REVIEW.md`, and `AI-CODING-PRACTICE.md` exist.
 - Each document has one clearly defined responsibility.
 - Complete contracts are not duplicated across multiple owner documents.
+- `PROJECT-STATE.md` owns the single Active Increment Contract; no duplicate Plan artifact such as `IMPLEMENTATION-PLAN.md` exists.
 - Documentation language and terminology are internally consistent.
 
 ### Product specification
@@ -2126,6 +2276,7 @@ Use this checklist for detailed review. Mark each item as `pass`, `not applicabl
 - `AGENTS.md` defines Domain Model, Clean Architecture, service-boundary, and data-ownership rules.
 - `AGENTS.md` defines the test pyramid and evidence taxonomy.
 - Default Git behavior prohibits Agent commit/push/history rewriting without explicit authorization.
+- Planner, Developer, and Reviewer responsibilities for the Active Increment Contract are explicit: Planner generates it, Developer implements only Included Scope, and Reviewer verifies from Contract plus Git diff plus repository evidence.
 
 ### Loop governance
 
@@ -2142,6 +2293,7 @@ Use this checklist for detailed review. Mark each item as `pass`, `not applicabl
 ### Collaboration continuity
 
 - `PROJECT-STATE.md` identifies the current lifecycle phase and active increment or defect contract.
+- The current increment has an explicit Active Increment Contract with Increment ID, Increment Status, Scope Boundary, Validation Plan (with Evidence Level), and Reviewer Acceptance Checklist.
 - It links to current product and architecture owners instead of duplicating them.
 - It records open decisions, blockers, evidence level, and next authorized step.
 - It records the active Loop Contract/status or explicitly states that no loop is active.
@@ -2163,6 +2315,7 @@ Use this checklist for detailed review. Mark each item as `pass`, `not applicabl
 - Deployment, staging, production, and continuous-health claims require evidence.
 - Technical debt is distinct from confirmed Product Non-goals.
 - `AI-CODING-PRACTICE.md` contains no invented AI usage metrics.
+- Increment Status and Task Status use only the defined values; Validation Plan Evidence Levels follow the Evidence Classification and never exceed actual verification scope.
 
 ### Scope control
 
